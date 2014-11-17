@@ -4,11 +4,14 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 
+import uk.co.caprica.vlcj.runtime.RuntimeUtil;
+
 import com.dreaminsteam.jarcade.gui.JarcadeMainWindow;
+import com.sun.jna.NativeLibrary;
 
 public class Jarcade {
 
-	public static boolean RUN_FULL_SCREEN = true;
+	public static boolean RUN_FULL_SCREEN = false;
 	
 	private JarcadeMainWindow mainWindow;
 	
@@ -30,7 +33,7 @@ public class Jarcade {
 			mainWindow.setVisible(true);
 		}
 		
-		
+		//mainWindow.playStartupMovie();
 	}
 	
 	public void shutdownGracefully(){
@@ -64,6 +67,7 @@ public class Jarcade {
 	}
 	
 	public static void main(String[] args){
+		NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), "/Applications/VLC.app/Contents/MacOS/lib");
 		Jarcade.startANewInstance();
 	}
 }

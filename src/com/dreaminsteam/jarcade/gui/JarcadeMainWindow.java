@@ -1,10 +1,14 @@
 package com.dreaminsteam.jarcade.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.net.URL;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -27,7 +31,18 @@ public class JarcadeMainWindow extends JFrame{
 		this.setBackground(Color.BLACK);
 
 		registerKeyboardHandler();
-		
+	}
+	
+	public void playStartupMovie(){
+		try{
+			JarcadeMoviePlayer jmp = new JarcadeMoviePlayer();
+			this.setContentPane(jmp);
+			File f = new File("test.m4v");
+			String url = "file://" + f.getAbsolutePath();
+			jmp.playMedia(url);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	private void registerKeyboardHandler(){
