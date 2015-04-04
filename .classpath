@@ -2,6 +2,12 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/vlcj-3.0.1/vlcj-3.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/jna-4.0.0.jar"/>
+	<classpathentry kind="lib" path="lib/purejavahid/purejavahidapi.jar" sourcepath="lib/purejavahid/purejavahidapi-src.jar"/>
+	<classpathentry kind="lib" path="lib/vlcj-3.6.0/vlcj-3.6.0.jar" sourcepath="lib/vlcj-3.6.0/vlcj-3.6.0-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/JarCade/lib/vlcj-3.6.0/vlcj-3.6.0-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="build"/>
 </classpath>

@@ -35,11 +35,11 @@ public class JarcadeMainWindow extends JFrame{
 	
 	public void playStartupMovie(){
 		try{
-			JarcadeMoviePlayer jmp = new JarcadeMoviePlayer();
+			JarcadeMoviePlayer jmp = new JarcadeMoviePlayer(this.getWidth(), this.getHeight());
 			this.setContentPane(jmp);
-			File f = new File("test.m4v");
+			File f = new File("/Users/jpapcun/Movies/test.m4v");
 			String url = "file://" + f.getAbsolutePath();
-			jmp.playMedia(url);
+			jmp.playMedia(url, null);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
