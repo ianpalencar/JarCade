@@ -19,8 +19,10 @@ import com.sun.jna.NativeLibrary;
 public class Jarcade {
 
 	public static boolean RUN_FULL_SCREEN = false;
+	public static boolean PLAY_STARTUP_MOVIE = true;
 	
 	private JarcadeMainWindow mainWindow;
+	private GraphicsDevice primaryScreen;
 	private ColorFader ledFader;
 	
 	public Jarcade(){
@@ -36,17 +38,24 @@ public class Jarcade {
 		
 		if(RUN_FULL_SCREEN){
 			primaryScreen.setFullScreenWindow(mainWindow);
+			this.primaryScreen = primaryScreen;
 		}else{
 			mainWindow.setBounds(new Rectangle(0,0,800,600));
 			mainWindow.setVisible(true);
 		}
 		
 		findAndConnectToLedController();
-		
-		//mainWindow.playStartupMovie();
+		if(PLAY_STARTUP_MOVIE){
+			mainWindow.playStartupMovie();
+		}else{
+			mainWindow.loadToMenu();
+		}
 	}
 	
 	public void shutdownGracefully(){
+		if(primaryScreen != null){
+			primaryScreen.setFullScreenWindow(null);
+		}
 		if(ledFader != null){			
 			ledFader.stop();
 		}
@@ -91,7 +100,7 @@ public class Jarcade {
 	
 	public static void main(String[] args){
 		new NativeDiscovery().discover();
-		//LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", "/Applications/VLC.app/Contents/MacOS/plugins", 1);
+		LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", "/Applications/VLC.app/Contents/MacOS/plugins", 1);
 		Jarcade.startANewInstance();
 	}
 }

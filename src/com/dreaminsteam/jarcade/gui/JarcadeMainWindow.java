@@ -3,6 +3,7 @@ package com.dreaminsteam.jarcade.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyAdapter;
@@ -12,7 +13,12 @@ import java.net.URL;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JWindow;
+import javax.swing.SwingUtilities;
+
+import uk.co.caprica.vlcj.player.MediaPlayer;
+import uk.co.caprica.vlcj.player.MediaPlayerEventAdapter;
 
 import com.dreaminsteam.jarcade.Jarcade;
 
@@ -24,6 +30,8 @@ public class JarcadeMainWindow extends JFrame{
 	
 	public JarcadeMainWindow(Jarcade parent){
 		this.parent = parent;
+		this.getContentPane().setBackground(Color.BLACK);
+		this.setBackground(Color.BLACK);
 	}
 	
 	public void setUpGUI(){
@@ -35,14 +43,39 @@ public class JarcadeMainWindow extends JFrame{
 	
 	public void playStartupMovie(){
 		try{
-			JarcadeMoviePlayer jmp = new JarcadeMoviePlayer(this.getWidth(), this.getHeight());
+			final JarcadeMoviePlayer jmp = new JarcadeMoviePlayer(this.getWidth(), this.getHeight());
 			this.setContentPane(jmp);
-			File f = new File("/Users/jpapcun/Movies/test.m4v");
+			File f = new File("./resources/arcade_intro.mp4");
 			String url = "file://" + f.getAbsolutePath();
-			jmp.playMedia(url, null);
+			jmp.playMedia(url, new MediaPlayerEventAdapter(){
+				@Override
+				public void finished(MediaPlayer mediaPlayer) {
+					SwingUtilities.invokeLater(() -> { 
+							JarcadeMainWindow.this.remove(jmp);
+							loadToMenu();
+						});
+					
+				}
+			});
 		}catch(Exception e){
 			e.printStackTrace();
 		}
+	}
+	
+	public void loadToMenu(){
+		JPanel jPanel = new JPanel();
+		jPanel.setBackground(Color.BLACK);
+		jPanel.setSize(this.getWidth(), this.getHeight());
+		jPanel.setPreferredSize(new Dimension(this.getWidth(), this.getHeight()));
+		
+		JLabel label = new JLabel("MENU!");
+		label.setForeground(Color.WHITE);
+		label.setHorizontalAlignment(JLabel.CENTER);
+		
+		jPanel.setLayout(new BorderLayout());
+		jPanel.add(label, BorderLayout.CENTER);
+		
+		this.setContentPane(jPanel);
 	}
 	
 	private void registerKeyboardHandler(){

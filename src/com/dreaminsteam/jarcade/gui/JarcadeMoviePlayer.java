@@ -2,6 +2,7 @@ package com.dreaminsteam.jarcade.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Canvas;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -34,6 +35,7 @@ public class JarcadeMoviePlayer extends JPanel{
 	public JarcadeMoviePlayer(int width, int height){
 		this.width = width;
 		this.height = height;
+		this.setBackground(Color.BLACK);
 		
 		this.setSize(width, height);
 		this.setMinimumSize(new Dimension(width, height));
@@ -47,7 +49,7 @@ public class JarcadeMoviePlayer extends JPanel{
 
 			@Override
 			public BufferFormat getBufferFormat(int sourceWidth, int sourceHeight) {
-				return new RV32BufferFormat(width, height);
+				return new RV32BufferFormat(JarcadeMoviePlayer.this.width, JarcadeMoviePlayer.this.height);
 			}
 			
 		}, new RenderCallbackAdapter(((DataBufferInt)image.getRaster().getDataBuffer()).getData()){
