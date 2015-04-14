@@ -9,5 +9,6 @@
 			<attribute name="javadoc_location" value="jar:platform:/resource/JarCade/lib/vlcj-3.6.0/vlcj-3.6.0-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/db4o-7.2.44.10827-java5.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
