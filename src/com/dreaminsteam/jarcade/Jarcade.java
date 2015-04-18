@@ -3,6 +3,7 @@ package com.dreaminsteam.jarcade;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
+import java.io.File;
 import java.util.List;
 
 import uk.co.caprica.vlcj.binding.LibC;
@@ -11,6 +12,7 @@ import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 import uk.co.caprica.vlcj.version.LibVlcVersion;
 import uk.co.caprica.vlcj.version.Version;
 
+import com.dreaminsteam.jarcade.database.DatabaseController;
 import com.dreaminsteam.jarcade.gui.JarcadeMainWindow;
 import com.dreaminsteam.ledcontroller.ColorFader;
 import com.dreaminsteam.ledcontroller.MJSLedController;
@@ -18,8 +20,8 @@ import com.sun.jna.NativeLibrary;
 
 public class Jarcade {
 
-	public static boolean RUN_FULL_SCREEN = false;
-	public static boolean PLAY_STARTUP_MOVIE = true;
+	public static boolean RUN_FULL_SCREEN = true;
+	public static boolean PLAY_STARTUP_MOVIE = false;
 	
 	private JarcadeMainWindow mainWindow;
 	private GraphicsDevice primaryScreen;
@@ -53,6 +55,8 @@ public class Jarcade {
 	}
 	
 	public void shutdownGracefully(){
+		DatabaseController.shutdownControllersGracefully();
+		
 		if(primaryScreen != null){
 			primaryScreen.setFullScreenWindow(null);
 		}
@@ -61,6 +65,7 @@ public class Jarcade {
 		}
 		mainWindow.setVisible(false);
 		mainWindow.dispose();
+		
 		System.exit(0);
 	}
 	
@@ -98,9 +103,15 @@ public class Jarcade {
 		instance.startInstance();
 	}
 	
+	public static boolean isMacOs(){
+		return File.separatorChar == '/';
+	}
+	
 	public static void main(String[] args){
 		new NativeDiscovery().discover();
-		LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", "/Applications/VLC.app/Contents/MacOS/plugins", 1);
+		if(isMacOs()){
+			LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", "/Applications/VLC.app/Contents/MacOS/plugins", 1);
+		}
 		Jarcade.startANewInstance();
 	}
 }
