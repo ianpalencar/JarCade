@@ -3,7 +3,10 @@ package com.dreaminsteam.jarcade;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
-import java.util.List;
+import java.io.IOException;
+
+import org.apache.log4j.PropertyConfigurator;
+import org.slf4j.LoggerFactory;
 
 import uk.co.caprica.vlcj.binding.LibC;
 import uk.co.caprica.vlcj.discovery.NativeDiscovery;
@@ -11,10 +14,15 @@ import uk.co.caprica.vlcj.discovery.NativeDiscovery;
 import com.dreaminsteam.jarcade.database.DatabaseController;
 import com.dreaminsteam.jarcade.gui.JarcadeMainWindow;
 import com.dreaminsteam.ledcontroller.ColorFader;
+import com.dreaminsteam.ledcontroller.LedController;
 import com.dreaminsteam.ledcontroller.MJSLedController;
 import com.sun.jna.Platform;
 
 public class Jarcade {
+	
+	static {
+		PropertyConfigurator.configure("./config/log4j.properties");
+	}
 
 	public static boolean RUN_FULL_SCREEN = true;
 	public static boolean PLAY_STARTUP_MOVIE = false;
@@ -66,13 +74,14 @@ public class Jarcade {
 	}
 	
 	private void findAndConnectToLedController(){
-		List<MJSLedController> connectedControllers = MJSLedController.getConnectedControllers();
-		if(connectedControllers.isEmpty()){
-			return;
+		try (LedController controller = MJSLedController.findAndOpenAllMJSDevices().get(0)) {
+			ledFader = new ColorFader(controller);
+			ledFader.colorCycle(ColorFader.getRandomColorList(), 2, true);
+		} catch (IOException ex) {
+			LoggerFactory.getLogger(getClass()).error("Unable to open controller", ex);
+		} catch (IndexOutOfBoundsException indexOutOfBounds) {
+			LoggerFactory.getLogger(getClass()).error("Unable to find a controller to open", indexOutOfBounds);
 		}
-		MJSLedController mjsLedController = connectedControllers.get(0);
-		ledFader = new ColorFader(mjsLedController);
-		ledFader.colorCycle(ColorFader.getRandomColorList(), 2, true);
 	}
 	
 	private GraphicsDevice findPrimaryScreen(){
