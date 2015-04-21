@@ -17,6 +17,7 @@ import com.dreaminsteam.jarcade.gui.JarcadeMainWindow;
 import com.dreaminsteam.ledcontroller.ColorFader;
 import com.dreaminsteam.ledcontroller.MJSLedController;
 import com.sun.jna.NativeLibrary;
+import com.sun.jna.Platform;
 
 public class Jarcade {
 
@@ -103,13 +104,9 @@ public class Jarcade {
 		instance.startInstance();
 	}
 	
-	public static boolean isMacOs(){
-		return File.separatorChar == '/';
-	}
-	
 	public static void main(String[] args){
 		new NativeDiscovery().discover();
-		if(isMacOs()){
+		if(Platform.isMac()){
 			LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", "/Applications/VLC.app/Contents/MacOS/plugins", 1);
 		}
 		Jarcade.startANewInstance();
