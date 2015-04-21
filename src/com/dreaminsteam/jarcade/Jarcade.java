@@ -3,20 +3,15 @@ package com.dreaminsteam.jarcade;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
-import java.io.File;
 import java.util.List;
 
 import uk.co.caprica.vlcj.binding.LibC;
 import uk.co.caprica.vlcj.discovery.NativeDiscovery;
-import uk.co.caprica.vlcj.runtime.RuntimeUtil;
-import uk.co.caprica.vlcj.version.LibVlcVersion;
-import uk.co.caprica.vlcj.version.Version;
 
 import com.dreaminsteam.jarcade.database.DatabaseController;
 import com.dreaminsteam.jarcade.gui.JarcadeMainWindow;
 import com.dreaminsteam.ledcontroller.ColorFader;
 import com.dreaminsteam.ledcontroller.MJSLedController;
-import com.sun.jna.NativeLibrary;
 import com.sun.jna.Platform;
 
 public class Jarcade {
