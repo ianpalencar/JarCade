@@ -1,138 +1,172 @@
 package com.dreaminsteam.ledcontroller;
 
-import java.awt.Color;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import purejavahidapi.HidDevice;
 import purejavahidapi.HidDeviceInfo;
 import purejavahidapi.PureJavaHidApi;
 
-public class MJSLedController {
-
-	public static final short VENDOR_ID = 0x0B40;
-	public static final short PRODUCT_ID = 0x012D;
+/**
+ * Note that this class opens-on-instantiation, and once closed cannot be reused.
+ */
+public class MJSLedController implements LedController {
 	
-	private HidDeviceInfo deviceInfo;
-	private HidDevice underlyingDevice;
+	/**
+	 * The vendor class ID of the MJS USB-LED-1.
+	 */
+	public static final short MJS_USB_LED_1_VENDOR_ID = 0x0B40;
 	
-	public static List<MJSLedController> getConnectedControllers(){
-		List<HidDeviceInfo> deviceList = PureJavaHidApi.enumerateDevices();
+	/**
+	 * The USB product ID of the MJS USB-LED-1.
+	 */
+	public static final short MJS_USB_LED_1_PRODUCT_ID = 0x012D;
+	
+	/**
+	 * A slf4j logger used for various bits and pieces in this class.
+	 */
+	private final Logger logger = LoggerFactory.getLogger(MJSLedController.class);
+	
+	public static final List<LedController> findAndOpenAllMJSDevices() {
+		return PureJavaHidApi.enumerateDevices()
+			.stream()
+			.filter(info -> { return MJS_USB_LED_1_VENDOR_ID == info.getVendorId() && MJS_USB_LED_1_PRODUCT_ID == info.getProductId(); })
+			.map(info -> { return new MJSLedController(info); })
+			.collect(Collectors.toList());
+	}
+	
+	/**
+	 * The HidDevice, which keeps track of open state by being not null (for now).
+	 */
+	private HidDevice device;
+	
+	/**
+	 * Opens this controller with the specified {@link HidDeviceInfo}.
+	 * @param deviceInfo The {@link HidDeviceInfo} to use to open the connection.
+	 */
+	private MJSLedController(HidDeviceInfo deviceInfo) {
+		open(deviceInfo);
+	}
+	
+	@Override
+	public void close() throws IOException {
+		setColor(0, 0, 0);
+		if (device != null) {
+			device.close();
+		}
+		device = null;
+	}
+	
+	@Override
+	public boolean setColor(int r, int g, int b) {
+		if (!isOpen()) {
+			return false;
+		}
 		
-		List<MJSLedController> allPossibleControllers = new ArrayList<MJSLedController>();
-		for(HidDeviceInfo info : deviceList){
-			if(info.getVendorId() == VENDOR_ID && info.getProductId() == PRODUCT_ID){
-				allPossibleControllers.add(new MJSLedController(info));
-			}
+		//scale to 10 bit numbers.
+		int red = r * 4;
+		int green = g * 4;
+		int blue = b * 4;
+		
+		//pack into four bytes, as such:
+		// [ ][ ][b][b][b][b][b][b]
+		// [b][b][b][b][r][r][r][r]
+		// [r][r][r][r][r][r][g][g]
+		// [g][g][g][g][g][g][g][g]
+		
+		byte b1, b2, b3, b4;
+		
+		b1 = (byte)((0 << 6) | (byte)(blue >> 4)); //is the 0 << 6 necessary?
+		b2 = (byte)((blue << 4) | (byte)(red >> 6));
+		b3 = (byte)((red << 2) | (byte)(green >> 8));
+		b4 = (byte)(green);
+		
+		if (!writeBytes((byte)0xAF, (byte)0x04, b1, b2, b3, b4)) {
+			return false;
 		}
 		
-		return allPossibleControllers;
-	}
-	
-	private MJSLedController(HidDeviceInfo deviceInfo){
-		this.deviceInfo = deviceInfo;
-	}
-	
-	public boolean openConnectionAndInitialize() throws IOException{
-		if(underlyingDevice == null){
-			underlyingDevice = PureJavaHidApi.openDevice(deviceInfo.getPath());
-			if(!initPort()){ return false; }
-			if(!setColor(0,0,0)){ return false; }
-			return true;
-		}else{
-			throw new IllegalStateException("Device connection is already open.");
-		}
-	}
-	
-	public boolean isOpen(){
-		return underlyingDevice != null;
-	}
-	
-	public void closeDevice(){
-		if(underlyingDevice != null){
-			setColor(0,0,0);
-			underlyingDevice.close();
-			underlyingDevice = null;
-		}
-	}
-	
-	public void changeColor(Color color){
-		if(underlyingDevice != null){
-			setColor(color.getRed(), color.getGreen(), color.getBlue());
-		}
-	}
-	
-	public void changeColor(int red, int green, int blue){
-		if(underlyingDevice != null){	
-			setColor(red, green, blue);
-		}
-	}
-	
-	
-	private boolean initPort(){
-		if(underlyingDevice == null){
+		if (!clearPort()) {
 			return false;
 		}
-		return writeBytes(underlyingDevice, 0x93, 0xc0, 0x20, 0, 0, 0)
-				&& writeBytes(underlyingDevice, 0x9F, 0x06, 0x00, 0, 0, 0)
-				&& writeBytes(underlyingDevice, 0x9F, 0x03, 0x06, 0x00, 0, 0);
-	}
-	
-	private boolean setColor(int r, int g, int b){
-		if(underlyingDevice == null){
+		
+		if (!colorCorrect()) {
 			return false;
 		}
-				
-		//---------------------------------------------------------------
-		// Convert max of 255 to max of 1023
-		//---------------------------------------------------------------
-		int green = g*4;		
-		int red = r*4;
-		int blue = b*4;
-
-		//---------------------------------------------------------------
-		// Convert RGB to four bytes
-		//---------------------------------------------------------------
-		byte b3, b4, b5, b6;
-		b3 = (byte)((0 << 6) | (byte)(blue >> 4));
-		b4 = (byte)((blue << 4) | (byte)(red >> 6));
-		b5 = (byte)((red << 2) | (byte)(green >> 8));
-		b6 = (byte)(green);
-
-		//---------------------------------------------------------------
-		// Write out to the USB device
-		//---------------------------------------------------------------
-		if (!writeBytes(underlyingDevice, (byte)0xAF, (byte)0x04, b3, b4, b5, b6)) return false;
-		if (!clearPort()) return false;
-		return allegroColorCorrect();
+		
+		return true;
 	}
 	
-	private boolean allegroColorCorrect(){
-		if(underlyingDevice == null){
+	/**
+	 * This might need to change implementation in future, but for now just null-checking the device.
+	 * @return <code>true</code> if the device is open and ready to do communications.
+	 */
+	private boolean isOpen() {
+		return device != null;
+	}
+	
+	/**
+	 * Performs 'allegro color correction', whatever that means.
+	 * @return <code>true</code> if the command was sent to the underlying library successfully.
+	 */
+	private boolean colorCorrect() {
+		if (!isOpen()) {
 			return false;
 		}
-		return writeBytes(underlyingDevice, 0x46, 0xE1, 0xFC, 0x6E, 0, 0)
-				&& clearPort();
+		
+		return writeBytes(0x46, 0xE1, 0xFC, 0x6E, 0, 0) && clearPort();
 	}
 	
-	private boolean clearPort(){
-		if(underlyingDevice == null){
+	/**
+	 * Clears the port? Assuming this is to formalize the end of the data.
+	 * @return <code>true</code> if the port was cleared.
+	 */
+	private boolean clearPort() {
+		if (!isOpen()) {
 			return false;
 		}
-		return  writeBytes(underlyingDevice, 0x9F, 0x03, 0x05, 0x01, 0, 0)
-				&& writeBytes(underlyingDevice, 0x9F, 0x03, 0x05, 0x00, 0, 0);
+		
+		return writeBytes(0x9F, 0x03, 0x05, 0x01, 0, 0) && writeBytes(0x9F, 0x03, 0x05, 0, 0, 0);
 	}
 	
-	private static boolean writeBytes(HidDevice device, int b1, int b2, int b3, int b4, int b5, int b6){
-		return writeBytes(device, (byte)b1, (byte)b2, (byte)b3, (byte)b4, (byte)b5, (byte)b6);
+	
+	
+	/**
+	 * Write the given six bytes to the device.
+	 * @param b1 The first byte (usually a header of some sort)
+	 * @param b2 The second byte (usually a header of some sort)
+	 * @param b3 The third byte (usually data)
+	 * @param b4 The fourth byte (usually data)
+	 * @param b5 The fifth byte (usually data)
+	 * @param b6 The sixth byte (usually data)
+	 * @return <code>true</code> if the bytes were sent successfully to the library for sending to the device.
+	 */
+	private boolean writeBytes(int b1, int b2, int b3, int b4, int b5, int b6) {
+		return writeBytes((byte)(b1 & 0xff), (byte)(b2 & 0xff), (byte)(b3 & 0xff), (byte)(b4 & 0xff), (byte)(b5 & 0xff), (byte)(b6 & 0xff));
 	}
 	
-	private static boolean writeBytes(HidDevice device, byte b1, byte b2, byte b3, byte b4, byte b5, byte b6){
+	/**
+	 * Write the given six bytes to the device.
+	 * @param b1 The first byte (usually a header of some sort)
+	 * @param b2 The second byte (usually a header of some sort)
+	 * @param b3 The third byte (usually data)
+	 * @param b4 The fourth byte (usually data)
+	 * @param b5 The fifth byte (usually data)
+	 * @param b6 The sixth byte (usually data)
+	 * @return <code>true</code> if the bytes were sent successfully to the library for sending to the device.
+	 */
+	private boolean writeBytes(byte b1, byte b2, byte b3, byte b4, byte b5, byte b6) {
+		if (!isOpen()) {
+			return false;
+		}
+		
 		byte[] report = new byte[65];
-		for(int i = 0; i < report.length; i++){
-			report[i] = 0;
-		}
+		Arrays.fill(report, (byte)0);
+		
 		report[0] = b1;
 		report[1] = b2;
 		report[2] = b3;
@@ -140,10 +174,45 @@ public class MJSLedController {
 		report[4] = b5;
 		report[5] = b6;
 		
-		int setOutputReport = device.setOutputReport((byte)0, report, report.length);
-		if(setOutputReport != report.length){
+		int reportLength = device.setOutputReport((byte)0, report, report.length);
+		
+		return reportLength == report.length;
+	}
+	
+	/**
+	 * Opens the device if the device hasn't been opened yet.
+	 */
+	private void open(HidDeviceInfo info) {
+		if (isOpen()) {
+			return;
+		}
+		
+		try {
+			device = PureJavaHidApi.openDevice(info.getPath());
+		} catch (IOException ex) {
+			logger.error("Unable to open HID device", ex);
+			device = null;
+			return;
+		}
+		
+		try {
+			if (!initPort()) {
+				close();
+			} else if (!setColor(0, 0, 0)) {
+				close();
+			}
+		} catch (IOException ex) {
+			logger.error("Unable to properly open port", ex);
+		}
+	}
+	
+	private boolean initPort() {
+		if (!isOpen()) {
 			return false;
 		}
-		return true;
+		
+		return writeBytes(0x93, 0xC0, 0x20, 0, 0, 0)
+				&& writeBytes(0x9F, 0x06, 0, 0, 0, 0)
+				&& writeBytes(0x9F, 0x03, 0x06, 0, 0, 0);
 	}
 }
