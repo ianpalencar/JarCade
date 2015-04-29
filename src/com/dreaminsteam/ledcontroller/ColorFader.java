@@ -9,13 +9,20 @@ public class ColorFader {
 	
 	private static final double GOLDEN_RATIO = 0.618033988749895;
 	
-	private LedController controller;
+	private MJSLedController controller;
 	private Thread fadeThread;
 	private LinkedList<Color> colorList;
 	private boolean running = false;
 	
-	public ColorFader(LedController controller){
-		controller.setColor(Color.BLACK);
+	public ColorFader(MJSLedController controller){
+		if(!controller.isOpen()){
+			try{
+				controller.openConnectionAndInitialize();
+			}catch(Throwable t){
+				throw new IllegalArgumentException("Cannot communicate with controller", t);
+			}
+		}
+		controller.changeColor(Color.BLACK);
 		this.controller = controller;
 	}
 	
@@ -31,7 +38,7 @@ public class ColorFader {
 			}
 			fadeThread = null;
 		}
-		controller.setColor(Color.BLACK);
+		controller.changeColor(Color.BLACK);
 	}
 	
 	public synchronized void pulseColor(Color color, int pulseRateSeconds){
@@ -59,7 +66,7 @@ public class ColorFader {
 				while(running){
 					long currentTime = System.currentTimeMillis();
 					Color fadeStep = fadeStep(currentTime, startTime, secondsToFade*1000, startColor, nextColor);
-					controller.setColor(fadeStep);
+					controller.changeColor(fadeStep);
 					try{
 						Thread.sleep(5);
 					}catch(Throwable t){
