@@ -5,6 +5,8 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.util.List;
 
+import org.apache.log4j.PropertyConfigurator;
+
 import uk.co.caprica.vlcj.binding.LibC;
 import uk.co.caprica.vlcj.discovery.NativeDiscovery;
 
@@ -15,6 +17,10 @@ import com.dreaminsteam.ledcontroller.MJSLedController;
 import com.sun.jna.Platform;
 
 public class Jarcade {
+	
+	static {
+		PropertyConfigurator.configure("./config/log4j.properties");
+	}
 
 	public static boolean RUN_FULL_SCREEN = true;
 	public static boolean PLAY_STARTUP_MOVIE = false;
